@@ -33,13 +33,13 @@
      </style>
 </head>
 <body>
-    <h3> Using the Media recorder API to record the audio in the web browser </h3>
+    <h3>Using the Media Recorder API to Record Audio in the Web Browser</h3>
     <div>
-       <button id = "start"> Start Recording </button>
-       <button id = "stop"> Stop Recording </button>
-       <button id = "play"> Play Recorded Audio </button>
+       <button id="start">Start Recording</button>
+       <button id="stop">Stop Recording</button>
+       <button id="play">Play Recorded Audio</button>
     </div> <br> 
-    <div id = "output"> </div>
+    <div id="output"></div>
     <script>
         const startButton = document.getElementById('start');
         const stopButton = document.getElementById('stop');
@@ -47,43 +47,73 @@
         let output = document.getElementById('output');
         let audioRecorder;
         let audioChunks = [];
+        let base64Audio = '';
+
         navigator.mediaDevices.getUserMedia({ audio: true })
            .then(stream => {
-           
-              // Initialize the media recorder object
               audioRecorder = new MediaRecorder(stream);
-              
-              // dataavailable event is fired when the recording is stopped
+
               audioRecorder.addEventListener('dataavailable', e => {
                  audioChunks.push(e.data);
               });
-              
-              // start recording when the start button is clicked
+
               startButton.addEventListener('click', () => {
                  audioChunks = [];
                  audioRecorder.start();
                  output.innerHTML = 'Recording started! Speak now.';
               });
-              
-              // stop recording when the stop button is clicked
+
               stopButton.addEventListener('click', () => {
                  audioRecorder.stop();
-                 output.innerHTML = 'Recording stopped! Click on the play button to play the recorded audio.';
+                 audioRecorder.addEventListener('stop', () => {
+                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
+                    const reader = new FileReader();
+
+                    reader.onloadend = () => {
+                        base64Audio = reader.result.split(',')[1]; // Store the base64 audio data
+                        output.innerHTML = 'Recording stopped! Audio data stored. You can now save it with your form data.';
+                    };
+
+                    reader.readAsDataURL(blob); // Convert the blob to base64
+                 });
               });
-              
-              // play the recorded audio when the play button is clicked
+
               playButton.addEventListener('click', () => {
-                 const blobObj = new Blob(audioChunks, { type: 'audio/webm' });
-                 const audioUrl = URL.createObjectURL(blobObj);
-                 const audio = new Audio(audioUrl);
-                 audio.play();
-                 output.innerHTML = 'Playing the recorded audio!';
+                 if (base64Audio) {
+                    const audioUrl = `data:audio/webm;base64,${base64Audio}`;
+                    const audio = new Audio(audioUrl);
+                    audio.play();
+                    output.innerHTML = 'Playing the recorded audio!';
+                 } else {
+                    output.innerHTML = 'No audio data to play. Please record something first.';
+                 }
               });
            }).catch(err => {
-           
-              // If the user denies permission to record audio, then display an error.
               console.log('Error: ' + err);
            });
+
+        function saveFormData() {
+            const formDataObject = {
+                // Other form data fields here...
+                audioData: base64Audio, // Store the base64 audio data
+                // More form data fields...
+            };
+
+            if (localStorage.formdata) {
+                const existingData = JSON.parse(localStorage.formdata);
+                existingData.push(formDataObject);
+                localStorage.formdata = JSON.stringify(existingData);
+            } else {
+                localStorage.formdata = JSON.stringify([formDataObject]);
+            }
+
+            // Clear the form if needed
+            // document.querySelector("form").reset();
+
+            location.reload();
+            
+        }
      </script>
 </body>
 </html>
+
