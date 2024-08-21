@@ -30,6 +30,7 @@
       <button id="play">Play Recorded Audio</button>
       <button id="clear">Clear Stored Data</button>
       <button id="save" onclick="saveFormData()">save</button>
+      <button id="download" onclick="download()">download</button>
    </div>
     </div>
     <br />
@@ -113,6 +114,21 @@ function calculateBase64SizeInMB(base64String) {
         } else {
           localStorage.formdata = JSON.stringify([formDataObject]);
         }
+      }
+
+       function download(){
+         if (base64Audio) {
+                    const audioUrl = `data:audio/webm;base64,${base64Audio}`;
+                    const a = document.createElement('a');
+                    a.href = audioUrl;
+                    a.download = 'recorded_audio.webm';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    output.innerHTML = 'Audio file downloaded!';
+                 } else {
+                    output.innerHTML = 'No audio data to download. Please record something first.';
+                 }
       }
 
 
