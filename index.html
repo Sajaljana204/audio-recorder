@@ -1,119 +1,126 @@
-<!-- <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Audio Recorder</title>
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link rel="stylesheet" href="main.css">
-
-</head>
-<body>
-    <main>
-        <button class="mic-toggle" id="mic">
-            <span class="material-icons">mic</span>
-        </button>
-        <audio class="playback" controls></audio>
-    </main>
-    <script src="main.js"></script>
-   
-</body>
-</html> -->
-
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
     <style>
-        button {margin: 5px; padding: 10px 20px; background-color: #007bff; color: #fff; border: none; border-radius: 5px; cursor: pointer;}
-        button:hover {background-color: #0056b3;}
-        div { margin-top: 20px;}
-     </style>
-</head>
-<body>
+      button {
+        margin: 5px;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      div {
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
     <h3>Using the Media Recorder API to Record Audio in the Web Browser</h3>
     <div>
-       <button id="start">Start Recording</button>
-       <button id="stop">Stop Recording</button>
-       <button id="play">Play Recorded Audio</button>
-    </div> <br> 
+      <button id="start">Start Recording</button>
+      <button id="stop">Stop Recording</button>
+      <button id="play">Play Recorded Audio</button>
+      <button id="clear">Clear Stored Data</button>
+      <button id="save" onclick="saveFormData()">save</button>
+   </div>
+    </div>
+    <br />
     <div id="output"></div>
     <script>
-        const startButton = document.getElementById('start');
-        const stopButton = document.getElementById('stop');
-        const playButton = document.getElementById('play');
-        let output = document.getElementById('output');
-        let audioRecorder;
-        let audioChunks = [];
-        let base64Audio = '';
+      const startButton = document.getElementById("start");
+      const stopButton = document.getElementById("stop");
+      const playButton = document.getElementById("play");
+      let output = document.getElementById("output");
+      const clearButton = document.getElementById('clear');
+      let audioRecorder;
+      let audioChunks = [];
+      let base64Audio = "";
 
-        navigator.mediaDevices.getUserMedia({ audio: true })
-           .then(stream => {
-              audioRecorder = new MediaRecorder(stream);
+      navigator.mediaDevices
+        .getUserMedia({ audio: true })
+        .then((stream) => {
+          audioRecorder = new MediaRecorder(stream);
 
-              audioRecorder.addEventListener('dataavailable', e => {
-                 audioChunks.push(e.data);
-              });
+          audioRecorder.addEventListener("dataavailable", (e) => {
+            audioChunks.push(e.data);
+          });
 
-              startButton.addEventListener('click', () => {
-                 audioChunks = [];
-                 audioRecorder.start();
-                 output.innerHTML = 'Recording started! Speak now.';
-              });
+          startButton.addEventListener("click", () => {
+            audioChunks = [];
+            audioRecorder.start();
+            output.innerHTML = "Recording started! Speak now.";
+          });
 
-              stopButton.addEventListener('click', () => {
-                 audioRecorder.stop();
-                 audioRecorder.addEventListener('stop', () => {
-                    const blob = new Blob(audioChunks, { type: 'audio/webm' });
-                    const reader = new FileReader();
+          stopButton.addEventListener("click", () => {
+            audioRecorder.stop();
+            audioRecorder.addEventListener("stop", () => {
+              const blob = new Blob(audioChunks, { type: "audio/webm" });
+              const reader = new FileReader();
 
-                    reader.onloadend = () => {
-                        base64Audio = reader.result.split(',')[1]; // Store the base64 audio data
-                        output.innerHTML = 'Recording stopped! Audio data stored. You can now save it with your form data.';
-                    };
+              reader.onloadend = () => {
+                base64Audio = reader.result.split(",")[1]; // Store the base64 audio data
+                const sizeInMB = calculateBase64SizeInMB(base64Audio);
+                output.innerHTML = `Recording stopped! Audio data stored (${sizeInMB} MB). You can now save it with your form data.`;
+              };
 
-                    reader.readAsDataURL(blob); // Convert the blob to base64
-                 });
-              });
+              reader.readAsDataURL(blob); // Convert the blob to base64
+            });
+          });
 
-              playButton.addEventListener('click', () => {
-                 if (base64Audio) {
-                    const audioUrl = `data:audio/webm;base64,${base64Audio}`;
-                    const audio = new Audio(audioUrl);
-                    audio.play();
-                    output.innerHTML = 'Playing the recorded audio!';
-                 } else {
-                    output.innerHTML = 'No audio data to play. Please record something first.';
-                 }
-              });
-           }).catch(err => {
-              console.log('Error: ' + err);
-           });
-
-        function saveFormData() {
-            const formDataObject = {
-                // Other form data fields here...
-                audioData: base64Audio, // Store the base64 audio data
-                // More form data fields...
-            };
-
-            if (localStorage.formdata) {
-                const existingData = JSON.parse(localStorage.formdata);
-                existingData.push(formDataObject);
-                localStorage.formdata = JSON.stringify(existingData);
+          playButton.addEventListener("click", () => {
+            if (base64Audio) {
+              const audioUrl = `data:audio/webm;base64,${base64Audio}`;
+              const audio = new Audio(audioUrl);
+              audio.play();
+              output.innerHTML = "Playing the recorded audio!";
             } else {
-                localStorage.formdata = JSON.stringify([formDataObject]);
+              output.innerHTML =
+                "No audio data to play. Please record something first.";
             }
+          });
+        })
+        .catch((err) => {
+          console.log("Error: " + err);
+        });
 
-            // Clear the form if needed
-            // document.querySelector("form").reset();
+        // Function to calculate the size of the base64 string in MB
+function calculateBase64SizeInMB(base64String) {
+    const stringLength = base64String.length;
+    const sizeInBytes = 4 * Math.ceil(stringLength / 3) * 0.75;
+    const sizeInMB = sizeInBytes / (1024 * 1024);
+    return sizeInMB.toFixed(2); // Returns size in MB with 2 decimal places
+}
 
-            location.reload();
-            
+      function saveFormData() {
+        const formDataObject = {
+          // Other form data fields here...
+          audioData: base64Audio, // Store the base64 audio data
+          // More form data fields...
+        };
+
+        if (localStorage.formdata) {
+          const existingData = JSON.parse(localStorage.formdata);
+          existingData.push(formDataObject);
+          localStorage.formdata = JSON.stringify(existingData);
+        } else {
+          localStorage.formdata = JSON.stringify([formDataObject]);
         }
-     </script>
-</body>
-</html>
+      }
 
+
+      clearButton.addEventListener('click', () => {
+                  localStorage.removeItem('formdata'); // Remove the 'formdata' item from localStorage
+                  output.innerHTML = 'Stored data cleared!';
+                  location.reload(); // Optionally reload the page to clear the form
+              });
+    </script>
+  </body>
+</html>
